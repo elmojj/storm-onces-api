@@ -1,0 +1,51 @@
+# 使用多阶段构建优化镜像大小
+
+# 阶段1: 依赖安装和构建
+FROM node:18-alpine AS builder
+
+WORKDIR /app
+
+# 复制 package 文件
+COPY package.json yarn.lock* package-lock.json* ./
+
+# 安装依赖
+RUN npm ci --only=production=false
+
+# 复制源代码
+COPY . .
+
+# 构建应用
+RUN npm run build
+
+# 阶段2: 生产运行环境
+FROM node:18-alpine AS runner
+
+WORKDIR /app
+
+# 设置环境变量为生产模式
+ENV NODE_ENV=production
+
+# 创建非 root 用户
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# 创建 public 目录（Next.js 需要，即使为空）
+RUN mkdir -p ./public
+
+# 复制必要的文件
+# 复制 standalone 构建输出（包含所有必要的文件）
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# public 目录会在 standalone 构建中自动处理，无需额外复制
+
+USER nextjs
+
+# 暴露端口
+EXPOSE 6066
+
+ENV PORT=6066
+ENV HOSTNAME="0.0.0.0"
+
+# 启动应用
+CMD ["node", "server.js"]

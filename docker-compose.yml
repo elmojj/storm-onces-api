@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  storm-onces:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: storm-onces-api
+    ports:
+      - "6066:6066"
+    environment:
+      # ONES Token 配置（从环境变量或 .env 文件读取）
+      - ONES_TOKEN_URL=${ONES_TOKEN_URL:-https://ones.cn/identity/oauth/token}
+      - ONES_CLIENT_ID=${ONES_CLIENT_ID:-ones.v1}
+      - ONES_INITIAL_ACCESS_TOKEN=${ONES_INITIAL_ACCESS_TOKEN}
+      - ONES_INITIAL_REFRESH_TOKEN=${ONES_INITIAL_REFRESH_TOKEN}
+      - ONES_COOKIE=${ONES_COOKIE:-}
+      # Node.js 环境
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:6066/api/auth/token', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+

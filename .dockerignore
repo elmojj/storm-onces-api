@@ -1,0 +1,43 @@
+# 依赖
+node_modules
+npm-debug.log
+yarn-error.log
+
+# 构建输出
+.next
+out
+dist
+build
+
+# 环境变量文件（通过环境变量或 secrets 传入）
+.env
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# 测试
+coverage
+.nyc_output
+
+# 文档
+README.md
+*.md
+
+# Docker
+Dockerfile
+.dockerignore
+docker-compose.yml
+
+# 其他
+.DS_Store
+*.log
+debug.log
+
