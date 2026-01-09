@@ -16,7 +16,7 @@ const UPDATE_MANHOUR_URL =
  *
  * 请求体：
  * {
- *   taskId: string,  // 任务ID，例如 "Ai5bfAgBEmOllWPC"
+ *   taskId: string,  // 任务ID（可以使用任务的 key 或 uuid），例如 "Ai5bfAgBEmOllWPC"
  *   usedTime: number // 工时（小时），例如 2，会自动转换为 value = usedTime * 100000
  * }
  *
@@ -106,6 +106,14 @@ export async function POST(req: NextRequest) {
 
     // 构建请求 URL
     const url = `${UPDATE_MANHOUR_URL}/${taskId}/assess_manhour/update`;
+
+    console.log("[update-manhour] 请求信息", {
+      url,
+      taskId,
+      usedTime,
+      value,
+      taskIdLength: taskId.length,
+    });
 
     // 调用 ONES API
     const resp = await fetch(url, {
@@ -199,11 +207,38 @@ export async function POST(req: NextRequest) {
 
     if (!resp.ok) {
       const text = await resp.text();
-      console.error("[update-manhour] 请求失败", resp.status, text);
+      let errorMessage = `Update manhour failed: ${resp.status}. Response: ${text}`;
+
+      // 尝试解析错误响应
+      try {
+        const errorData = JSON.parse(text);
+        if (errorData.errcode === "NotFound.Task") {
+          errorMessage = `任务未找到 (404): taskId "${taskId}" 不存在或无权访问。请确认：\n1. taskId 是否正确（可以使用任务的 key 或 uuid）\n2. 任务是否在当前项目中\n3. 是否有权限访问该任务`;
+        } else if (errorData.error || errorData.message) {
+          errorMessage = `更新工时失败: ${errorData.error || errorData.message}`;
+        }
+      } catch {
+        // 如果解析失败，使用原始文本
+      }
+
+      console.error("[update-manhour] 请求失败", {
+        status: resp.status,
+        statusText: resp.statusText,
+        response: text,
+        url,
+        taskId,
+        value,
+      });
+
       return NextResponse.json(
         {
           success: false,
-          error: `Update manhour failed: ${resp.status}. Response: ${text}`,
+          error: errorMessage,
+          details: {
+            status: resp.status,
+            taskId,
+            url,
+          },
         },
         {
           status: resp.status,
