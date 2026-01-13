@@ -40,8 +40,6 @@ RUN mkdir -p ./public
 # standalone 输出会将 server.js 放在根目录
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-# 如果 public 目录存在，也需要复制
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
