@@ -13,6 +13,10 @@ export default function HomePage() {
           按用户名（必填）和产品 ID（可选）过滤并按 sprint 分类汇总任务
         </li>
         <li>
+          POST /api/tasks/create - 创建新任务（请求体：{"{"}"title": "任务标题",
+          "description": "任务描述（可选）", "userId": "用户ID"{"}"}）
+        </li>
+        <li>
           POST /api/tasks/update-manhour - 更新任务工时（请求体：{"{"}"taskId":
           "任务ID", "usedTime": 工时小时数{"}"}）
         </li>
