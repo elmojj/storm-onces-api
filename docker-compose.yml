@@ -5,6 +5,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+          - http_proxy=http://192.168.123.160:808
+          - https_proxy=http://192.168.123.160:808
+          - HTTP_PROXY=http://192.168.123.160:808
+          - HTTPS_PROXY=http://192.168.123.160:808
     container_name: storm-onces-api
     ports:
       - "6066:6066"

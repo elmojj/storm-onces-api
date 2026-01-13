@@ -1,24 +1,27 @@
 # 使用多阶段构建优化镜像大小
 
 # 阶段1: 依赖安装和构建
-FROM node:18-alpine AS builder
+# 使用 DaoCloud 镜像源加速（如果无法访问，可以改为其他国内镜像源）
+FROM docker.m.daocloud.io/node:18-alpine AS builder
 
 WORKDIR /app
 
-# 复制 package 文件
-COPY package.json yarn.lock* package-lock.json* ./
+# 复制 yarn 文件
+COPY package.json yarn.lock ./
 
-# 安装依赖
-RUN npm ci --only=production=false
+# 设置 yarn 镜像源
+RUN yarn config set registry https://registry.npmmirror.com && \
+    yarn install --frozen-lockfile
 
 # 复制源代码
 COPY . .
 
 # 构建应用
-RUN npm run build
+RUN yarn build
 
 # 阶段2: 生产运行环境
-FROM node:18-alpine AS runner
+# 使用 DaoCloud 镜像源加速（如果无法访问，可以改为其他国内镜像源）
+FROM docker.m.daocloud.io/node:18-alpine AS runner
 
 WORKDIR /app
 
@@ -34,10 +37,11 @@ RUN mkdir -p ./public
 
 # 复制必要的文件
 # 复制 standalone 构建输出（包含所有必要的文件）
+# standalone 输出会将 server.js 放在根目录
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-# public 目录会在 standalone 构建中自动处理，无需额外复制
+# 如果 public 目录存在，也需要复制
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
@@ -48,4 +52,5 @@ ENV PORT=6066
 ENV HOSTNAME="0.0.0.0"
 
 # 启动应用
+# standalone 模式下，server.js 在根目录
 CMD ["node", "server.js"]
