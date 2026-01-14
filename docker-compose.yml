@@ -20,9 +20,11 @@ services:
       - ONES_INITIAL_ACCESS_TOKEN=${ONES_INITIAL_ACCESS_TOKEN}
       - ONES_INITIAL_REFRESH_TOKEN=${ONES_INITIAL_REFRESH_TOKEN}
       - ONES_COOKIE=${ONES_COOKIE:-}
+      
+      # 企业微信配置（从环境变量或 .env 文件读取）
       - WECHAT_CORPID=${WECHAT_CORPID}
       - WECHAT_SECRET=${WECHAT_SECRET}
-      - WECHAT_CORPID=${WECHAT_CORPID}
+      - WECHAT_AGENTID=${WECHAT_AGENTID}
       
       # Node.js 环境
       - NODE_ENV=production
