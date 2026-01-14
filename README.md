@@ -9,6 +9,8 @@
 3. **GraphQL 代理**：封装 ONES GraphQL 接口，自动添加 Authorization header
 4. **任务管理**：提供创建任务、更新工时等任务管理接口
 5. **自动重试**：接口在遇到 401 错误时会自动刷新 token 并重试
+6. **企业微信集成**：封装企业微信汇报应用接口，自动管理 access_token
+7. **企业微信授权登录**：提供完整的OAuth授权登录流程，支持获取用户信息
 
 ## 快速开始
 
@@ -28,9 +30,17 @@ cp .env.local.example .env.local
 
 编辑 `.env.local`，填入：
 
+**ONES 相关：**
+
 - `ONES_INITIAL_ACCESS_TOKEN`：从浏览器抓取的 access token（Bearer 后面的部分）
 - `ONES_INITIAL_REFRESH_TOKEN`：从浏览器抓取的 refresh token
 - `ONES_COOKIE`（可选）：如果需要 Cookie 才能刷新 token
+
+**企业微信相关：**
+
+- `WECHAT_CORPID`：企业微信的企业ID
+- `WECHAT_SECRET`：企业微信应用的Secret（用于获取access_token）
+- `WECHAT_AGENTID`：企业微信应用的AgentID（用于OAuth授权）
 
 ### 3. 启动开发服务器
 
@@ -315,6 +325,128 @@ curl -X POST http://localhost:3000/api/tasks/update-manhour \
 - 如果任务不存在或无权访问，会返回 404 错误
 - 接口会自动处理 token 刷新（401 错误时）
 
+### 6. 企业微信汇报 - 获取汇报记录
+
+**POST** `/api/wechat/report/records`
+
+获取企业微信汇报记录，支持按时间范围、用户等条件筛选。
+
+**请求体：**
+
+```json
+{
+  "template_id": "汇报模板ID（可选）",
+  "start_time": 1640995200,
+  "end_time": 1641081600,
+  "userid": "用户ID（可选）",
+  "cursor": "分页游标（可选）",
+  "limit": 100,
+  "corpid": "企业ID（可选，优先使用环境变量）",
+  "secret": "应用Secret（可选，优先使用环境变量）"
+}
+```
+
+**参数说明：**
+
+- `template_id`（可选）：汇报模板ID
+- `start_time`（可选）：开始时间戳（Unix 时间戳）
+- `end_time`（可选）：结束时间戳（Unix 时间戳）
+- `userid`（可选）：用户ID，筛选特定用户的汇报
+- `cursor`（可选）：分页游标，用于获取下一页数据
+- `limit`（可选）：每页数量，默认100，最大100
+- `corpid`（可选）：企业ID，未提供时使用环境变量 `WECHAT_CORPID`
+- `secret`（可选）：应用Secret，未提供时使用环境变量 `WECHAT_SECRET`
+
+**响应格式：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "records": [
+      // 汇报记录列表
+    ],
+    "next_cursor": "下一页游标"
+  }
+}
+```
+
+**使用示例：**
+
+```bash
+curl -X POST http://localhost:3000/api/wechat/report/records \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template_id": "模板ID",
+    "start_time": 1640995200,
+    "end_time": 1641081600,
+    "limit": 50
+  }'
+```
+
+**注意事项：**
+
+- 需要先在企业微信管理后台启用「汇报」应用
+- 需要配置环境变量 `WECHAT_CORPID` 和 `WECHAT_SECRET`，或在请求体中提供
+- access_token 会自动缓存，有效期2小时
+
+### 7. 企业微信汇报 - 获取汇报统计
+
+**POST** `/api/wechat/report/statistic`
+
+获取企业微信汇报的统计信息，包括未读、已提交数量等。
+
+**请求体：**
+
+```json
+{
+  "template_id": "汇报模板ID（必填）",
+  "start_time": 1640995200,
+  "end_time": 1641081600,
+  "corpid": "企业ID（可选，优先使用环境变量）",
+  "secret": "应用Secret（可选，优先使用环境变量）"
+}
+```
+
+**参数说明：**
+
+- `template_id`（必填）：汇报模板ID
+- `start_time`（可选）：开始时间戳（Unix 时间戳）
+- `end_time`（可选）：结束时间戳（Unix 时间戳）
+- `corpid`（可选）：企业ID，未提供时使用环境变量 `WECHAT_CORPID`
+- `secret`（可选）：应用Secret，未提供时使用环境变量 `WECHAT_SECRET`
+
+**响应格式：**
+
+```json
+{
+  "success": true,
+  "data": {
+    "statistics": [
+      // 统计信息列表，包含未读、已提交数量等
+    ]
+  }
+}
+```
+
+**使用示例：**
+
+```bash
+curl -X POST http://localhost:3000/api/wechat/report/statistic \
+  -H "Content-Type: application/json" \
+  -d '{
+    "template_id": "模板ID",
+    "start_time": 1640995200,
+    "end_time": 1641081600
+  }'
+```
+
+**注意事项：**
+
+- 需要先在企业微信管理后台启用「汇报」应用
+- 需要配置环境变量 `WECHAT_CORPID` 和 `WECHAT_SECRET`，或在请求体中提供
+- access_token 会自动缓存，有效期2小时
+
 ## 使用示例
 
 ### 使用 curl 获取 token
@@ -411,6 +543,49 @@ const updateRes = await fetch('http://localhost:3000/api/tasks/update-manhour', 
   })
 });
 const updateResult = await updateRes.json();
+
+// 获取企业微信汇报记录
+const reportRes = await fetch('http://localhost:3000/api/wechat/report/records', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    template_id: '模板ID',
+    start_time: 1640995200,
+    end_time: 1641081600
+  })
+});
+const reportData = await reportRes.json();
+
+// 获取企业微信汇报统计
+const statisticRes = await fetch('http://localhost:3000/api/wechat/report/statistic', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    template_id: '模板ID',
+    start_time: 1640995200,
+    end_time: 1641081600
+  })
+});
+const statisticData = await statisticRes.json();
+
+// 生成企业微信授权URL
+const authUrlRes = await fetch('http://localhost:3000/api/wechat/auth/url?redirect_uri=http://localhost:3000/callback&agentid=1000002');
+const { url } = await authUrlRes.json();
+// 引导用户跳转到 url
+
+// 处理授权回调（在企业微信回调的页面中）
+const callbackRes = await fetch('http://localhost:3000/api/wechat/auth/callback?code=xxx&include_detail=true');
+const callbackData = await callbackRes.json();
+
+// 获取用户详细信息
+const userInfoRes = await fetch('http://localhost:3000/api/wechat/auth/userinfo', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    userid: '用户ID'
+  })
+});
+const userInfo = await userInfoRes.json();
 ```
 
 ## 自动刷新机制

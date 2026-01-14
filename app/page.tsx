@@ -20,6 +20,28 @@ export default function HomePage() {
           POST /api/tasks/update-manhour - 更新任务工时（请求体：{"{"}"taskId":
           "任务ID", "usedTime": 工时小时数{"}"}）
         </li>
+        <li>
+          POST /api/wechat/report/records - 获取企业微信汇报记录（请求体：{"{"}
+          "template_id": "模板ID", "start_time": 开始时间戳, "end_time":
+          结束时间戳{"}"}）
+        </li>
+        <li>
+          POST /api/wechat/report/statistic - 获取企业微信汇报统计（请求体：
+          {"{"}"template_id": "模板ID（必填）", "start_time": 开始时间戳,
+          "end_time": 结束时间戳{"}"}）
+        </li>
+        <li>
+          GET /api/wechat/auth/url -
+          生成企业微信授权登录URL（查询参数：redirect_uri, agentid等）
+        </li>
+        <li>
+          GET /api/wechat/auth/callback -
+          处理企业微信授权回调，获取用户信息（查询参数：code）
+        </li>
+        <li>
+          POST /api/wechat/auth/userinfo - 通过userid获取用户详细信息（请求体：
+          {"{"}"userid": "用户ID"{"}"}）
+        </li>
       </ul>
     </main>
   );
