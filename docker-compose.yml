@@ -20,6 +20,10 @@ services:
       - ONES_INITIAL_ACCESS_TOKEN=${ONES_INITIAL_ACCESS_TOKEN}
       - ONES_INITIAL_REFRESH_TOKEN=${ONES_INITIAL_REFRESH_TOKEN}
       - ONES_COOKIE=${ONES_COOKIE:-}
+      - WECHAT_CORPID=${WECHAT_CORPID}
+      - WECHAT_SECRET=${WECHAT_SECRET}
+      - WECHAT_CORPID=${WECHAT_CORPID}
+      
       # Node.js 环境
       - NODE_ENV=production
     restart: unless-stopped
