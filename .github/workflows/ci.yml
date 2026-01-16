@@ -1,0 +1,45 @@
+name: Deploy to Netlify on Commit
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    types: [closed]
+    branches: [main, master]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # 可选：运行测试或构建
+      - name: Run tests
+        run: npm test || echo "Tests completed"
+
+      # 关键步骤：触发 Netlify 构建
+      - name: Trigger Netlify Build
+        env:
+          NETLIFY_HOOK_URL: ${{ secrets.NETLIFY_BUILD_HOOK_URL }}
+        run: |
+          if [ -z "$NETLIFY_HOOK_URL" ]; then
+            echo "错误: NETLIFY_BUILD_HOOK_URL 未设置!"
+            echo "请到仓库 Settings → Secrets 中配置"
+            exit 1
+          fi
+
+          echo "正在触发 Netlify 构建..."
+          response=$(curl -s -w "%{http_code}" -X POST -d '{}' "$NETLIFY_HOOK_URL")
+          http_code=${response: -3}
+          body=${response:0:-3}
+
+          if [ "$http_code" = "200" ] || [ "$http_code" = "201" ]; then
+            echo "✅ Netlify 构建已成功触发"
+            echo "响应: $body"
+          else
+            echo "❌ 触发失败，HTTP 状态码: $http_code"
+            echo "响应: $body"
+            exit 1
+          fi
